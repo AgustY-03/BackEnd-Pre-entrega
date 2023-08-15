@@ -77,24 +77,27 @@ router.post('/:cid/product/:pid', async (req, res) => {
     if(fs.existsSync(pathCart)){
         const cid = +req.params.cid;
         const pid = +req.params.pid;
-        const cartList = await consultCart();
+        const cartToUpdate = await consultCart();
 
-        const products = {
-            id: pid,
-            quantity: 1
+        const cartChoosen = cartToUpdate.find( (e) => e.id === cid);
+        const cartProducts = cartChoosen.products;
+        const productIndex = cartProducts.findIndex( (e) => e.id === pid );
+        if(productIndex === -1){
+            const product = {
+                id: pid,
+                quantity: 1
+            }
+
+            cartProducts.push(product);
+        }else{
+            cartProducts[productIndex] = {
+                ...cartProducts[productIndex],
+                quantity: cartProducts[productIndex].quantity + 1
+            }
         }
 
-        const cartChoosen = cartList.find( (e) => e.id === cid);
-        const cartProducts = cartChoosen.products;
-        cartProducts.map( (e) => {
-            if ( e.id === pid){
-                e.quantity++;
-            }else{
-                cartProducts.push(products);
-            }
-        })
+        await fs.promises.writeFile(pathCart, JSON.stringify(cartToUpdate));
         res.send({ success: 'El producto fue añadido correctamente' });
-        await fs.promises.writeFile(pathCart, JSON.stringify(cartList));
         return;
     }
     res.send({ cart });
